@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { Footer } from '../components/Footer';
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -47,7 +48,8 @@ export function HomePage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 bg-dark-bg">
+    <div className="min-h-screen w-full flex flex-col bg-dark-bg">
+      <div className="flex-1 flex flex-col items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -131,7 +133,7 @@ export function HomePage() {
           </div>
         </motion.div>
 
-        {/* Footer */}
+        {/* Tagline */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -141,6 +143,10 @@ export function HomePage() {
           No login required. Anonymous questions. Real-time answers.
         </motion.p>
       </motion.div>
+      </div>
+
+      {/* Footer */}
+      <Footer />
 
       {/* Capacity Modal */}
       <AnimatePresence>
