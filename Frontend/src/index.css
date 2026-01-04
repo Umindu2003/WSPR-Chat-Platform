@@ -1,0 +1,77 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Dark theme color palette */
+    --background: #0F1115;
+    --card: #161A22;
+    --elevated: #1E2430;
+    --border: #2A3142;
+    --text-primary: #E6E8EC;
+    --text-secondary: #A6ADBB;
+    --text-muted: #7A8294;
+    --accent-primary: #4F7CFF;
+    --accent-hover: #3A63E6;
+    --success: #3DDC97;
+    --warning: #F6C177;
+    --error: #F7768E;
+    --radius: 12px;
+  }
+ 
+  * {
+    @apply border-dark-border;
+  }
+
+  body {
+    @apply bg-dark-bg text-dark-text font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+/* Custom scrollbar for dark theme */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #161A22;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2A3142;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3A4358;
+}
+
+/* Smooth focus transitions */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-accent-primary focus:ring-offset-2 focus:ring-offset-dark-bg;
+}
+
+/* Animation for subtle hover effects */
+@keyframes subtle-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-subtle-pulse {
+  animation: subtle-pulse 2s ease-in-out infinite;
+}
