@@ -48,9 +48,8 @@ export function ChatRoomPage() {
     }
 
     // Listen for room full event
-    socket.on('room_full', (data: any) => {
+    socket.on('room_full', () => {
       setRoomFull(true);
-      alert(data.message || 'This room is full!');
       setTimeout(() => navigate('/'), 2000);
     });
 

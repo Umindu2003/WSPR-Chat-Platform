@@ -8,7 +8,6 @@ import {
   Users,
   ChevronUp,
   ChevronDown,
-  AlertCircle,
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -21,7 +20,7 @@ export function HomePage() {
   const [roomCode, setRoomCode] = useState('');
   const [showCapacityModal, setShowCapacityModal] = useState(false);
   const [roomCapacity, setRoomCapacity] = useState('10');
-  const [error, setError] = useState('');
+  const [showInvalidCodeModal, setShowInvalidCodeModal] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
 
   const handleCreateRoom = () => {
@@ -49,7 +48,6 @@ export function HomePage() {
     e.preventDefault();
     if (!roomCode.trim()) return;
 
-    setError('');
     setIsChecking(true);
 
     // Clean the room code - extract room ID and capacity
@@ -78,15 +76,21 @@ export function HomePage() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Navigate with capacity if it was provided
+        // Room exists - navigate to it
         navigate(`/room/${cleanCode}${capacityParam}`);
+      } else if (response.status === 404) {
+        // Room doesn't exist - show invalid code modal
+        setShowInvalidCodeModal(true);
+        setTimeout(() => {
+          setShowInvalidCodeModal(false);
+          setRoomCode('');
+        }, 2000);
       } else {
-        // Room doesn't exist yet, but we can still try to join
-        // (the room will be created when the user joins via socket)
+        // Other error - still try to navigate (let socket handle it)
         navigate(`/room/${cleanCode}${capacityParam}`);
       }
     } catch (err) {
-      // Even if API fails, try to join the room
+      // Network error - still try to navigate (let socket handle it)
       navigate(`/room/${cleanCode}${capacityParam}`);
     } finally {
       setIsChecking(false);
@@ -95,7 +99,6 @@ export function HomePage() {
 
   const handleRoomCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setRoomCode(e.target.value);
-    if (error) setError('');
   };
 
   return (
@@ -169,24 +172,9 @@ export function HomePage() {
                   placeholder="Enter Room Code"
                   value={roomCode}
                   onChange={handleRoomCodeChange}
-                  className={`pl-11 h-14 text-lg ${error ? 'border-red-500 focus:border-red-500' : ''}`}
+                  className="pl-11 h-14 text-lg"
                 />
               </div>
-
-              {/* Error Message */}
-              <AnimatePresence>
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2"
-                  >
-                    <AlertCircle size={16} />
-                    <span>{error}</span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
 
               <div className="flex justify-center">
                 <Button
@@ -220,6 +208,40 @@ export function HomePage() {
 
       {/* Footer */}
       <Footer />
+
+      {/* Invalid Code Modal */}
+      <AnimatePresence>
+        {showInvalidCodeModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-dark-card rounded-3xl shadow-2xl p-8 w-full max-w-md border border-dark-border text-center"
+            >
+              <div className="flex justify-center mb-4">
+                <div className="w-20 h-20 rounded-full bg-dark-elevated flex items-center justify-center">
+                  <span className="text-5xl">😔</span>
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold text-dark-text mb-2">
+                Invalid Code
+              </h3>
+              <p className="text-dark-text-secondary text-sm">
+                This room does not exist.
+              </p>
+              <p className="text-dark-text-muted text-xs mt-2">
+                Redirecting to home...
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Capacity Modal */}
       <AnimatePresence>
