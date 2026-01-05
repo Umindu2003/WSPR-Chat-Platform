@@ -32,8 +32,7 @@ export function EmptyState() {
         transition={{ delay: 0.5 }}
         className="text-dark-text-secondary text-sm max-w-xs"
       >
-        Be the first to ask. Your question is anonymous and helps everyone
-        learn! 🎓
+        Go ahead. Speak your mind, leave no trace 💬
       </motion.p>
     </motion.div>
   );

@@ -8,16 +8,21 @@ import {
   Users,
   ChevronUp,
   ChevronDown,
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Footer } from '../components/Footer';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export function HomePage() {
   const navigate = useNavigate();
   const [roomCode, setRoomCode] = useState('');
   const [showCapacityModal, setShowCapacityModal] = useState(false);
   const [roomCapacity, setRoomCapacity] = useState('10');
+  const [error, setError] = useState('');
+  const [isChecking, setIsChecking] = useState(false);
 
   const handleCreateRoom = () => {
     setShowCapacityModal(true);
@@ -40,11 +45,57 @@ export function HomePage() {
     });
   };
 
-  const handleJoinRoom = (e: React.FormEvent) => {
+  const handleJoinRoom = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (roomCode.trim()) {
-      navigate(`/room/${roomCode.trim().toUpperCase()}`);
+    if (!roomCode.trim()) return;
+
+    setError('');
+    setIsChecking(true);
+
+    // Clean the room code - extract room ID and capacity
+    let cleanCode = roomCode.trim().toUpperCase();
+    let capacityParam = '';
+    
+    // Extract capacity if present
+    if (cleanCode.includes('?')) {
+      const parts = cleanCode.split('?');
+      cleanCode = parts[0];
+      // Parse capacity from query string
+      const params = new URLSearchParams(parts[1]);
+      const capacity = params.get('capacity') || params.get('CAPACITY');
+      if (capacity) {
+        capacityParam = `?capacity=${capacity}`;
+      }
     }
+    
+    // Remove any slashes if user pasted URL path
+    if (cleanCode.includes('/')) {
+      cleanCode = cleanCode.split('/').pop() || cleanCode;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/room/${cleanCode}`);
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Navigate with capacity if it was provided
+        navigate(`/room/${cleanCode}${capacityParam}`);
+      } else {
+        // Room doesn't exist yet, but we can still try to join
+        // (the room will be created when the user joins via socket)
+        navigate(`/room/${cleanCode}${capacityParam}`);
+      }
+    } catch (err) {
+      // Even if API fails, try to join the room
+      navigate(`/room/${cleanCode}${capacityParam}`);
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  const handleRoomCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setRoomCode(e.target.value);
+    if (error) setError('');
   };
 
   return (
@@ -76,7 +127,7 @@ export function HomePage() {
             transition={{ delay: 0.3 }}
             className="text-lg text-dark-text-secondary"
           >
-            Ask without fear.
+            Speak unseenly. Ask anonymously.
           </motion.p>
         </div>
 
@@ -117,18 +168,40 @@ export function HomePage() {
                 <Input
                   placeholder="Enter Room Code"
                   value={roomCode}
-                  onChange={(e) => setRoomCode(e.target.value)}
-                  className="pl-11 h-14 text-lg"
+                  onChange={handleRoomCodeChange}
+                  className={`pl-11 h-14 text-lg ${error ? 'border-red-500 focus:border-red-500' : ''}`}
                 />
               </div>
-              <Button
-                type="submit"
-                variant="secondary"
-                className="w-full h-12"
-                disabled={!roomCode.trim()}
-              >
-                Join Room
-              </Button>
+
+              {/* Error Message */}
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2"
+                  >
+                    <AlertCircle size={16} />
+                    <span>{error}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="flex justify-center">
+                <Button
+                  type="submit"
+                  variant="secondary"
+                  className={`w-fit px-12 h-12 transition-all duration-300 ${
+                    roomCode.trim() && !isChecking
+                      ? 'border-2 border-green-400 text-green-400 hover:border-green-300 hover:text-green-300 hover:shadow-[0_0_15px_rgba(74,222,128,0.3)]'
+                      : 'border border-dark-border text-dark-text-secondary'
+                  }`}
+                  disabled={!roomCode.trim() || isChecking}
+                >
+                  {isChecking ? 'Checking...' : 'Join Room'}
+                </Button>
+              </div>
             </form>
           </div>
         </motion.div>
@@ -140,7 +213,7 @@ export function HomePage() {
           transition={{ delay: 0.6 }}
           className="text-center text-dark-text-muted text-sm mt-8"
         >
-          No login required. Anonymous questions. Real-time answers.
+          No login required. Live chat. Zero receipts.
         </motion.p>
       </motion.div>
       </div>
