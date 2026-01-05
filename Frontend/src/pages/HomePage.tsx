@@ -12,6 +12,7 @@ import {
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Footer } from '../components/Footer';
+import { RoomTransition } from '../components/RoomTransition';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -22,6 +23,8 @@ export function HomePage() {
   const [roomCapacity, setRoomCapacity] = useState('10');
   const [showInvalidCodeModal, setShowInvalidCodeModal] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
+  const [showTransition, setShowTransition] = useState(false);
+  const [transitionType, setTransitionType] = useState<'creating' | 'joining'>('creating');
 
   const handleCreateRoom = () => {
     setShowCapacityModal(true);
@@ -31,8 +34,12 @@ export function HomePage() {
     const capacity = parseInt(roomCapacity);
     if (capacity >= 2 && capacity <= 100) {
       const newRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-      navigate(`/room/${newRoomId}?capacity=${capacity}`);
       setShowCapacityModal(false);
+      setTransitionType('creating');
+      setShowTransition(true);
+      setTimeout(() => {
+        navigate(`/room/${newRoomId}?capacity=${capacity}`);
+      }, 1500);
     }
   };
 
@@ -76,8 +83,12 @@ export function HomePage() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Room exists - navigate to it
-        navigate(`/room/${cleanCode}${capacityParam}`);
+        // Room exists - show transition then navigate
+        setTransitionType('joining');
+        setShowTransition(true);
+        setTimeout(() => {
+          navigate(`/room/${cleanCode}${capacityParam}`);
+        }, 1500);
       } else if (response.status === 404) {
         // Room doesn't exist - show invalid code modal
         setShowInvalidCodeModal(true);
@@ -86,12 +97,20 @@ export function HomePage() {
           setRoomCode('');
         }, 2000);
       } else {
-        // Other error - still try to navigate (let socket handle it)
-        navigate(`/room/${cleanCode}${capacityParam}`);
+        // Other error - show transition then navigate (let socket handle it)
+        setTransitionType('joining');
+        setShowTransition(true);
+        setTimeout(() => {
+          navigate(`/room/${cleanCode}${capacityParam}`);
+        }, 1500);
       }
     } catch (err) {
-      // Network error - still try to navigate (let socket handle it)
-      navigate(`/room/${cleanCode}${capacityParam}`);
+      // Network error - show transition then navigate (let socket handle it)
+      setTransitionType('joining');
+      setShowTransition(true);
+      setTimeout(() => {
+        navigate(`/room/${cleanCode}${capacityParam}`);
+      }, 1500);
     } finally {
       setIsChecking(false);
     }
@@ -102,23 +121,29 @@ export function HomePage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-dark-bg">
-      <div className="flex-1 flex flex-col items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
-      >
-        {/* Logo / Brand */}
-        <div className="text-center mb-10">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.1, duration: 0.4 }}
-            className="mb-6"
-          >
-            <img
+    <>
+      {/* Room Transition */}
+      <AnimatePresence>
+        {showTransition && <RoomTransition type={transitionType} />}
+      </AnimatePresence>
+
+      <div className="min-h-screen w-full flex flex-col bg-dark-bg">
+        <div className="flex-1 flex flex-col items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md"
+        >
+          {/* Logo / Brand */}
+          <div className="text-center mb-10">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.1, duration: 0.4 }}
+              className="mb-6"
+            >
+              <img
               src="/ChatLogo.png"
               alt="Unmute Logo"
               className="w-55 h-48 mx-auto object-contain"
@@ -334,6 +359,7 @@ export function HomePage() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+      </div>
+    </>
   );
 }
