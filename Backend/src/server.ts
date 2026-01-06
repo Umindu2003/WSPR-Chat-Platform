@@ -80,18 +80,95 @@ app.get('/api/room/:room', async (req, res) => {
 io.on('connection', (socket: Socket) => {
   console.log(`✅ User connected: ${socket.id}`);
 
-  // Event: User joins a room
+  // Event: Create a new room (only for room creators)
+  socket.on('create_room', async (data: { room: string; username: string; capacity: number }) => {
+    const { room, username, capacity } = data;
+
+    try {
+      // Check if room already exists
+      const existingRoom = await getRoomInfo(room);
+      if (existingRoom) {
+        // Room already exists, emit error
+        socket.emit('room_exists', {
+          message: 'Room already exists. Please try a different code.',
+        });
+        console.log(`❌ Room ${room} already exists, cannot create`);
+        return;
+      }
+
+      // Create the new room
+      const roomData = await createRoom(room, capacity);
+
+      // Add creator to the room
+      const joinResult = await addUserToRoom(room, socket.id);
+      if (!joinResult.success) {
+        socket.emit('error', { message: 'Failed to join created room' });
+        return;
+      }
+
+      // Join the Socket.io room
+      socket.join(room);
+      console.log(`🏠 ${username || socket.id} created and joined room: ${room} (${joinResult.room?.currentUsers}/${joinResult.room?.capacity})`);
+
+      // Send room info
+      socket.emit('room_created', {
+        roomId: room,
+        capacity: roomData.capacity,
+        currentUsers: joinResult.room?.currentUsers,
+      });
+
+      // Send room info to the creator
+      socket.emit('room_info', {
+        currentUsers: joinResult.room?.currentUsers,
+        capacity: joinResult.room?.capacity,
+      });
+
+      // Send empty messages (new room)
+      socket.emit('load_messages', []);
+    } catch (error) {
+      console.error('❌ Error creating room:', error);
+      socket.emit('error', { message: 'Failed to create room' });
+    }
+  });
+
+  // Event: User joins an existing room (strict validation - room must exist)
   socket.on('join_room', async (data: { room: string; username: string; capacity?: number }) => {
     const { room, username, capacity } = data;
 
     try {
-      // Create room if it doesn't exist (with capacity)
-      let roomData = await getRoomInfo(room);
-      if (!roomData && capacity) {
-        roomData = await createRoom(room, capacity);
+      // STRICT VALIDATION: Check if room exists in database
+      const roomData = await getRoomInfo(room);
+      
+      if (!roomData) {
+        // Room doesn't exist - emit room_not_found event
+        socket.emit('room_not_found', {
+          message: 'Room not found. Please check the room code and try again.',
+        });
+        console.log(`❌ ${username} tried to join non-existent room: ${room}`);
+        return;
+      }
+
+      // Optional: Validate invite capacity matches the room (prevents spoofed invites)
+      if (typeof capacity === 'number' && capacity !== roomData.capacity) {
+        socket.emit('invalid_invite', {
+          message: "Invite link does not match room settings.",
+        });
+        console.log(
+          `❌ ${username} provided invalid capacity for ${room}: got ${capacity}, expected ${roomData.capacity}`
+        );
+        return;
       }
 
       // Check if room is full
+      if (roomData.currentUsers >= roomData.capacity) {
+        socket.emit('room_full', {
+          message: 'Room is full. Please try again later.',
+        });
+        console.log(`❌ ${username} cannot join ${room}: Room is full (${roomData.currentUsers}/${roomData.capacity})`);
+        return;
+      }
+
+      // Add user to room
       const joinResult = await addUserToRoom(room, socket.id);
       if (!joinResult.success) {
         socket.emit('room_full', {

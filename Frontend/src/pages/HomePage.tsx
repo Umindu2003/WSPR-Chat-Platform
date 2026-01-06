@@ -14,7 +14,7 @@ import { Input } from '../components/ui/Input';
 import { Footer } from '../components/Footer';
 import { RoomTransition } from '../components/RoomTransition';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -57,37 +57,67 @@ export function HomePage() {
 
     setIsChecking(true);
 
-    // Clean the room code - extract room ID and capacity
-    let cleanCode = roomCode.trim().toUpperCase();
-    let capacityParam = '';
-    
-    // Extract capacity if present
-    if (cleanCode.includes('?')) {
-      const parts = cleanCode.split('?');
-      cleanCode = parts[0];
-      // Parse capacity from query string
-      const params = new URLSearchParams(parts[1]);
-      const capacity = params.get('capacity') || params.get('CAPACITY');
-      if (capacity) {
-        capacityParam = `?capacity=${capacity}`;
+    // Parse invite code.
+    // Expected: "TL12I5?capacity=10" (optionally inside a full URL/path).
+    const rawInput = roomCode.trim();
+
+    let roomPart = rawInput;
+    try {
+      if (rawInput.includes('://')) {
+        const url = new URL(rawInput);
+        roomPart = `${url.pathname}${url.search}`;
       }
+    } catch {
+      // ignore URL parse errors and continue with raw input
     }
-    
-    // Remove any slashes if user pasted URL path
-    if (cleanCode.includes('/')) {
-      cleanCode = cleanCode.split('/').pop() || cleanCode;
+
+    // If user pasted a path like /room/TL12I5?capacity=10, keep only the last segment + query
+    if (roomPart.includes('/')) {
+      const [pathOnly, queryPart] = roomPart.split('?');
+      const lastSegment = pathOnly.split('/').filter(Boolean).pop() || pathOnly;
+      roomPart = queryPart ? `${lastSegment}?${queryPart}` : lastSegment;
+    }
+
+    const [roomIdRaw, queryRaw] = roomPart.split('?');
+    const roomId = (roomIdRaw || '').trim().toUpperCase();
+    const query = queryRaw ? `?${queryRaw}` : '';
+    const params = new URLSearchParams(query);
+    const capacityStr = params.get('capacity');
+    const capacity = capacityStr ? parseInt(capacityStr, 10) : NaN;
+
+    // Enforce exact invite format: must include a valid capacity.
+    if (!roomId || !capacityStr || Number.isNaN(capacity) || capacity < 2 || capacity > 100) {
+      setShowInvalidCodeModal(true);
+      setTimeout(() => {
+        setShowInvalidCodeModal(false);
+        setRoomCode('');
+      }, 2000);
+      setIsChecking(false);
+      return;
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/room/${cleanCode}`);
+      const response = await fetch(`${API_URL}/api/room/${roomId}`);
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Room exists - show transition then navigate
+        const dbCapacity = data.room?.capacity;
+
+        // Room exists, but invite must match the room's capacity exactly.
+        if (!dbCapacity || dbCapacity !== capacity) {
+          setShowInvalidCodeModal(true);
+          setTimeout(() => {
+            setShowInvalidCodeModal(false);
+            setRoomCode('');
+          }, 2000);
+          return;
+        }
+
+        // Room exists - show transition then navigate with matching capacity
         setTransitionType('joining');
         setShowTransition(true);
         setTimeout(() => {
-          navigate(`/room/${cleanCode}${capacityParam}`);
+          navigate(`/room/${roomId}?capacity=${dbCapacity}`);
         }, 1500);
       } else if (response.status === 404) {
         // Room doesn't exist - show invalid code modal
@@ -97,20 +127,20 @@ export function HomePage() {
           setRoomCode('');
         }, 2000);
       } else {
-        // Other error - show transition then navigate (let socket handle it)
-        setTransitionType('joining');
-        setShowTransition(true);
+        // Other error - show invalid code modal
+        setShowInvalidCodeModal(true);
         setTimeout(() => {
-          navigate(`/room/${cleanCode}${capacityParam}`);
-        }, 1500);
+          setShowInvalidCodeModal(false);
+          setRoomCode('');
+        }, 2000);
       }
     } catch (err) {
-      // Network error - show transition then navigate (let socket handle it)
-      setTransitionType('joining');
-      setShowTransition(true);
+      // Network error - show error modal instead of navigating
+      setShowInvalidCodeModal(true);
       setTimeout(() => {
-        navigate(`/room/${cleanCode}${capacityParam}`);
-      }, 1500);
+        setShowInvalidCodeModal(false);
+        setRoomCode('');
+      }, 2000);
     } finally {
       setIsChecking(false);
     }
