@@ -37,7 +37,7 @@ export function ChatRoomPage() {
   // Initialize Socket.io connection
   useEffect(() => {
     // 1. Connect to backend
-    socketRef.current = io('http://localhost:3001');
+    socketRef.current = io(API_URL);
     const socket = socketRef.current;
 
     // 2. Validate and Join Logic
