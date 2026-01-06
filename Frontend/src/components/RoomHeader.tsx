@@ -178,7 +178,7 @@ export function RoomHeader({
                       Leave Room?
                     </h3>
                     <p className="text-xs text-dark-text-secondary mt-1">
-                      Are you sure you want to exit this Q&A room?
+                      ou are about to disconnect from this session.
                     </p>
                   </div>
                 </div>
