@@ -283,13 +283,12 @@ io.on('connection', (socket: Socket) => {
     });
   });
 
-  // Event: User disconnects
-  socket.on('disconnect', async () => {
-    console.log(`❌ User disconnected: ${socket.id}`);
+  // Event: User disconnects (using 'disconnecting' to access rooms before they are cleared)
+  socket.on('disconnecting', async () => {
+    console.log(`❌ User disconnecting: ${socket.id}`);
     
     // Remove user from all rooms they were in
-    const rooms = Array.from(socket.rooms);
-    for (const room of rooms) {
+    for (const room of socket.rooms) {
       if (room !== socket.id) {
         await removeUserFromRoom(room, socket.id);
         const roomInfo = await getRoomInfo(room);
