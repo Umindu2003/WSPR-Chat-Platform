@@ -289,7 +289,7 @@ export function ChatRoomPage() {
         capacity={roomCapacity}
       />
 
-      <main className="flex-1 overflow-y-auto p-4 scrollbar-hide">
+      <main className="flex-1 overflow-y-auto p-2 sm:p-4 scrollbar-hide">
         <div className="max-w-4xl mx-auto h-full flex flex-col">
           {messages.length === 0 ? (
             <EmptyState />

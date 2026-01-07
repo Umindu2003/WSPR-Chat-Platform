@@ -26,9 +26,9 @@ export function MessageBubble({
       className={`flex w-full mb-4 ${isSelf ? 'justify-end' : 'justify-start'}`}
     >
       <div
-        className={`flex max-w-[80%] md:max-w-[70%] ${
+        className={`flex max-w-[85%] sm:max-w-[80%] md:max-w-[70%] ${
           isSelf ? 'flex-row-reverse' : 'flex-row'
-        } items-end gap-2`}
+        } items-end gap-1.5 sm:gap-2`}
       >
         {/* DiceBear Avatar */}
         <div className="flex-shrink-0">
@@ -37,7 +37,7 @@ export function MessageBubble({
               username
             )}&backgroundColor=1E2430`}
             alt={username}
-            className="h-8 w-8 rounded-full bg-dark-elevated border border-dark-border"
+            className="h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-dark-elevated border border-dark-border"
           />
         </div>
 
@@ -51,8 +51,8 @@ export function MessageBubble({
 
           <div
             className={`${
-              isGif ? 'p-1' : 'px-4 py-3'
-            } rounded-2xl text-sm leading-relaxed shadow-lg ${
+              isGif ? 'p-1' : 'px-3 py-2 sm:px-4 sm:py-3'
+            } rounded-2xl text-xs sm:text-sm leading-relaxed shadow-lg ${
               isSelf
                 ? 'bg-accent-primary text-white rounded-br-sm'
                 : 'bg-dark-elevated text-dark-text border border-dark-border rounded-bl-sm'
@@ -62,7 +62,7 @@ export function MessageBubble({
               <img
                 src={message}
                 alt="GIF"
-                className="rounded-xl max-w-[250px] w-full h-auto"
+                className="rounded-xl max-w-[180px] sm:max-w-[250px] w-full h-auto"
                 loading="lazy"
               />
             ) : (

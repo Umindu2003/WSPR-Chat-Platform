@@ -70,7 +70,7 @@ export function GifPicker({ onSelect, onClose }: GifPickerProps) {
       initial={{ opacity: 0, scale: 0.95, y: 10 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, y: 10 }}
-      className="absolute bottom-full left-0 mb-2 bg-dark-elevated rounded-2xl shadow-2xl border border-dark-border w-96 max-h-96 overflow-hidden z-50"
+      className="fixed bottom-20 left-2 right-2 sm:absolute sm:bottom-full sm:left-0 sm:right-auto mb-2 bg-dark-elevated rounded-2xl shadow-2xl border border-dark-border w-auto sm:w-80 md:w-96 max-h-[60vh] sm:max-h-96 overflow-hidden z-50"
     >
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-dark-border">

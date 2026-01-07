@@ -70,15 +70,15 @@ export function MessageInput({
   };
 
   return (
-    <div className="p-4 bg-dark-card border-t border-dark-border">
+    <div className="p-2 sm:p-4 bg-dark-card border-t border-dark-border">
       <div className="max-w-4xl mx-auto">
         {/* Quick Reactions Bar */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="flex items-center justify-center gap-3 mb-3"
+          className="flex items-center justify-center gap-2 sm:gap-3 mb-3 overflow-x-auto scrollbar-hide"
         >
-          <span className="text-xs text-dark-text-muted font-medium">
+          <span className="text-xs text-dark-text-muted font-medium whitespace-nowrap hidden xs:inline sm:inline">
             Quick React:
           </span>
           {QUICK_REACTIONS.map((reaction, index) => (
@@ -98,7 +98,7 @@ export function MessageInput({
           ))}
         </motion.div>
 
-        <form onSubmit={handleSubmit} className="relative flex items-center gap-2">
+        <form onSubmit={handleSubmit} className="relative flex items-center gap-1 sm:gap-2">
           {/* Emoji Picker Button */}
           <div className="relative">
             <Button
@@ -121,15 +121,15 @@ export function MessageInput({
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute bottom-full left-0 mb-2 bg-dark-elevated rounded-2xl shadow-2xl border border-dark-border p-3 w-72 max-h-64 overflow-y-auto z-50"
+                  className="fixed bottom-20 left-2 right-2 sm:absolute sm:bottom-full sm:left-0 sm:right-auto mb-2 bg-dark-elevated rounded-2xl shadow-2xl border border-dark-border p-3 w-auto sm:w-72 max-h-[50vh] sm:max-h-64 overflow-y-auto z-50"
                 >
-                  <div className="grid grid-cols-8 gap-1">
+                  <div className="grid grid-cols-6 sm:grid-cols-8 gap-1">
                     {EMOJIS.map((emoji) => (
                       <button
                         key={emoji}
                         type="button"
                         onClick={() => addEmoji(emoji)}
-                        className="text-2xl hover:bg-dark-border rounded p-1 transition-colors"
+                        className="text-xl sm:text-2xl hover:bg-dark-border rounded p-1 transition-colors"
                       >
                         {emoji}
                       </button>
@@ -173,7 +173,7 @@ export function MessageInput({
             value={message}
             onChange={handleInputChange}
             placeholder="Ask a question..."
-            className="flex-1 bg-dark-elevated text-dark-text placeholder:text-dark-text-muted rounded-2xl px-4 py-3 border border-dark-border focus:outline-none focus:ring-2 focus:ring-accent-primary/30 focus:border-accent-primary transition-all duration-200"
+            className="flex-1 min-w-0 bg-dark-elevated text-dark-text placeholder:text-dark-text-muted rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-dark-border focus:outline-none focus:ring-2 focus:ring-accent-primary/30 focus:border-accent-primary transition-all duration-200"
           />
 
           {/* Send Button */}
@@ -181,13 +181,13 @@ export function MessageInput({
             type="submit"
             size="icon"
             disabled={!message.trim()}
-            className={`w-12 h-12 flex-shrink-0 md:w-11 md:h-11 ${
+            className={`w-10 h-10 sm:w-11 sm:h-11 flex-shrink-0 ${
               message.trim()
                 ? 'bg-accent-primary hover:bg-accent-hover'
                 : 'bg-dark-elevated text-dark-text-muted border border-dark-border'
             }`}
           >
-            <SendHorizontal size={24} className="md:w-5 md:h-5" />
+            <SendHorizontal size={20} className="sm:w-5 sm:h-5" />
           </Button>
         </form>
       </div>
