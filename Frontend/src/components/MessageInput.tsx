@@ -1,5 +1,5 @@
 import React, { useState, useRef, FormEvent } from 'react';
-import { SendHorizontal, Smile, Image as ImageIcon } from 'lucide-react';
+import { SendHorizontal, Smile } from 'lucide-react';
 import { Button } from './ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GifPicker } from './ui/GifPicker';
@@ -152,7 +152,7 @@ export function MessageInput({
               }}
               className="text-dark-text-muted hover:text-accent-primary w-9 h-9 p-1 md:w-10 md:h-10"
             >
-              <ImageIcon size={18} />
+              <span className="text-[10px] font-bold border border-current rounded px-1 py-0.5">GIF</span>
             </Button>
 
             {/* GIF Picker */}
