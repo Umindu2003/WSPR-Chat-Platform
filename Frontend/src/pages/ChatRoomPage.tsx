@@ -173,30 +173,33 @@ export function ChatRoomPage() {
 
     socket.on('load_messages', (loadedMessages: any[]) => {
       const formattedMessages = loadedMessages.map((msg: any) => {
-        // Check if author matches myUserId (author now stores the persistent ID)
-        const isMyMessage = msg.author === myUserId;
+        // WhatsApp Rule: Compare persistent ID to determine ownership
+        // Check userId first (new format), then author (current format)
+        const messageOwnerId = msg.userId || msg.author;
+        const isMine = messageOwnerId === myUserId;
         return {
           id: msg._id || msg.id,
           text: msg.message,
           username: msg.displayName || msg.author, // Use displayName for UI, fallback to author
           timestamp: msg.time,
-          author: msg.author, // Persistent userId for comparison
-          isSelf: isMyMessage,
+          author: messageOwnerId, // Persistent userId for comparison
+          isSelf: isMine, // TRUE = Right side (mine), FALSE = Left side (others)
         };
       });
       setMessages(formattedMessages);
     });
 
     socket.on('receive_message', (data: any) => {
-      // Check if author matches myUserId (author now stores the persistent ID)
-      const isMyMessage = data.author === myUserId;
+      // WhatsApp Rule: Compare persistent ID to determine ownership
+      const messageOwnerId = data.userId || data.author;
+      const isMine = messageOwnerId === myUserId;
       const newMessage: Message = {
         id: data.id || Date.now().toString(),
         text: data.message,
         username: data.displayName || data.author, // Use displayName for UI, fallback to author
         timestamp: data.time,
-        author: data.author, // Persistent userId for comparison
-        isSelf: isMyMessage,
+        author: messageOwnerId, // Persistent userId for comparison
+        isSelf: isMine, // TRUE = Right side (mine), FALSE = Left side (others)
       };
       setMessages((prev) => [...prev, newMessage]);
     });

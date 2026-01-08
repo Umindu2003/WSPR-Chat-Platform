@@ -24,7 +24,7 @@ export function App() {
       </AnimatePresence>
       
 
-    // Fixxed Router usage
+    
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route path="/" element={<HomePage />} />

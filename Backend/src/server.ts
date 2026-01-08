@@ -235,6 +235,7 @@ io.on('connection', (socket: Socket) => {
           id: savedMessage._id,
           room,
           author, // Persistent myUserId for ownership comparison
+          userId: author, // Also send as userId for consistency
           displayName: displayName || author, // Display name for UI
           message,
           time,
