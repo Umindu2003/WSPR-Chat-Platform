@@ -329,7 +329,7 @@ export function HomePage() {
               </div>
 
               <p className="text-dark-text-secondary mb-6">
-                How many students can join this room?
+                How many can join?
               </p>
 
               <div className="space-y-4">
