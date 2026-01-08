@@ -132,8 +132,8 @@ io.on('connection', (socket: Socket) => {
   });
 
   // Event: User joins an existing room (strict validation - room must exist)
-  socket.on('join_room', async (data: { room: string; username: string; userId?: string; capacity?: number; isReconnect?: boolean }) => {
-    const { room, username, userId, capacity, isReconnect } = data;
+  socket.on('join_room', async (data: { room: string; username: string; myUserId?: string; capacity?: number; isReconnect?: boolean }) => {
+    const { room, username, myUserId, capacity, isReconnect } = data;
 
     try {
       // STRICT VALIDATION: Check if room exists in database
@@ -214,15 +214,15 @@ io.on('connection', (socket: Socket) => {
   // Event: User sends a message
   socket.on(
     'send_message',
-    async (data: { room: string; author: string; userId: string; message: string; time: string }) => {
-      const { room, author, userId, message, time } = data;
+    async (data: { room: string; author: string; myUserId: string; message: string; time: string }) => {
+      const { room, author, myUserId, message, time } = data;
 
       try {
         // Save message to database
         const savedMessage = await saveMessage({
           room,
           author,
-          userId,
+          userId: myUserId, // Store as userId in database
           message,
           time,
         });
@@ -232,7 +232,7 @@ io.on('connection', (socket: Socket) => {
           id: savedMessage._id,
           room,
           author,
-          userId, // Include userId for ownership comparison on clients
+          userId: myUserId, // Include userId for ownership comparison on clients
           message,
           time,
           createdAt: savedMessage.createdAt,

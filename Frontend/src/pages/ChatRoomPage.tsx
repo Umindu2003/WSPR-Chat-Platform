@@ -10,16 +10,16 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 // Helper function to get or generate a persistent userId
 function getOrCreateUserId(): string {
-  const STORAGE_KEY = 'wspr_user_id';
-  let userId = localStorage.getItem(STORAGE_KEY);
+  const STORAGE_KEY = 'chat_user_id';
+  let myUserId = localStorage.getItem(STORAGE_KEY);
   
-  if (!userId) {
-    // Generate a unique ID: timestamp + random string
-    userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-    localStorage.setItem(STORAGE_KEY, userId);
+  if (!myUserId) {
+    // Generate a short random ID
+    myUserId = `${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
+    localStorage.setItem(STORAGE_KEY, myUserId);
   }
   
-  return userId;
+  return myUserId;
 }
 
 type Message = {
@@ -39,7 +39,7 @@ export function ChatRoomPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [username] = useState(`Guest_${Math.floor(Math.random() * 1000)}`);
   // Persistent userId that survives page refresh
-  const [userId] = useState(() => getOrCreateUserId());
+  const [myUserId] = useState(() => getOrCreateUserId());
   const [onlineCount, setOnlineCount] = useState(0);
   const [roomCapacity, setRoomCapacity] = useState(0);
   const [roomFull, setRoomFull] = useState(false);
@@ -91,7 +91,7 @@ export function ChatRoomPage() {
           setRoomCapacity(dbCapacity);
           currentCapacityRef.current = dbCapacity;
           hasJoinedRef.current = true;
-          socket.emit('join_room', { room: roomId, username, userId, capacity: dbCapacity });
+          socket.emit('join_room', { room: roomId, username, myUserId, capacity: dbCapacity });
 
         } else if (response.status === 404) {
           // --- CASE 2: ROOM DOES NOT EXIST ---
@@ -105,7 +105,7 @@ export function ChatRoomPage() {
             socket.emit('create_room', { 
               room: roomId, 
               username,
-              userId,
+              myUserId,
               capacity: urlCapacity
             });
           } else {
@@ -136,7 +136,7 @@ export function ChatRoomPage() {
         socket.emit('join_room', { 
           room: roomId, 
           username, 
-          userId,
+          myUserId,
           capacity: currentCapacityRef.current,
           isReconnect: true // Flag to let server know this is a reconnection
         });
@@ -177,8 +177,8 @@ export function ChatRoomPage() {
         text: msg.message,
         username: msg.author,
         timestamp: msg.time,
-        author: msg.userId || msg.author, // Use persistent userId for comparison
-        isSelf: (msg.userId || msg.author) === userId,
+        author: msg.userId || msg.author, // Use persistent myUserId for comparison
+        isSelf: (msg.userId || msg.author) === myUserId,
       }));
       setMessages(formattedMessages);
     });
@@ -189,8 +189,8 @@ export function ChatRoomPage() {
         text: data.message,
         username: data.author,
         timestamp: data.time,
-        author: data.userId || data.author, // Use persistent userId for comparison
-        isSelf: (data.userId || data.author) === userId,
+        author: data.userId || data.author, // Use persistent myUserId for comparison
+        isSelf: (data.userId || data.author) === myUserId,
       };
       setMessages((prev) => [...prev, newMessage]);
     });
@@ -239,7 +239,7 @@ export function ChatRoomPage() {
       }
       socket.disconnect();
     };
-  }, [roomId, username, userId, searchParams, navigate]); // Dependencies updated
+  }, [roomId, username, myUserId, searchParams, navigate]); // Dependencies updated
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -261,7 +261,7 @@ export function ChatRoomPage() {
     socketRef.current.emit('send_message', {
       room: roomId,
       author: username,
-      userId: userId, // Use persistent userId for message ownership
+      myUserId, // Use persistent myUserId for message ownership
       message: text,
       time: time,
     });
