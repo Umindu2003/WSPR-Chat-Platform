@@ -54,6 +54,8 @@ export function ChatRoomPage() {
   const currentCapacityRef = useRef<number>(0);
   // Track if we've successfully joined a room
   const hasJoinedRef = useRef<boolean>(false);
+  // Track if we're in room creation mode (trust the creator)
+  const isCreatingRef = useRef<boolean>(false);
 
   // Initialize Socket.io connection
   useEffect(() => {
@@ -102,6 +104,7 @@ export function ChatRoomPage() {
             setRoomCapacity(urlCapacity);
             currentCapacityRef.current = urlCapacity;
             hasJoinedRef.current = true;
+            isCreatingRef.current = true; // Trust the creator, skip room_not_found errors
             socket.emit('create_room', { 
               room: roomId, 
               username,
@@ -146,6 +149,11 @@ export function ChatRoomPage() {
     // --- SOCKET EVENT LISTENERS ---
 
     socket.on('room_not_found', () => {
+      // Skip this error if we're in creation mode (trust the creator)
+      if (isCreatingRef.current) {
+        console.log('Ignoring room_not_found during room creation');
+        return;
+      }
       setRoomNotFound(true);
       setTimeout(() => navigate('/'), 3000);
     });
