@@ -8,12 +8,27 @@ import { EmptyState } from '../components/EmptyState';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
+// Helper function to get or generate a persistent userId
+function getOrCreateUserId(): string {
+  const STORAGE_KEY = 'wspr_user_id';
+  let userId = localStorage.getItem(STORAGE_KEY);
+  
+  if (!userId) {
+    // Generate a unique ID: timestamp + random string
+    userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    localStorage.setItem(STORAGE_KEY, userId);
+  }
+  
+  return userId;
+}
+
 type Message = {
   id: string;
   text: string;
   username: string;
   timestamp: string;
   isSelf: boolean;
+  author: string; // Persistent userId for comparison
 };
 
 export function ChatRoomPage() {
@@ -23,6 +38,8 @@ export function ChatRoomPage() {
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [username] = useState(`Guest_${Math.floor(Math.random() * 1000)}`);
+  // Persistent userId that survives page refresh
+  const [userId] = useState(() => getOrCreateUserId());
   const [onlineCount, setOnlineCount] = useState(0);
   const [roomCapacity, setRoomCapacity] = useState(0);
   const [roomFull, setRoomFull] = useState(false);
@@ -33,6 +50,10 @@ export function ChatRoomPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Track current room capacity for reconnection
+  const currentCapacityRef = useRef<number>(0);
+  // Track if we've successfully joined a room
+  const hasJoinedRef = useRef<boolean>(false);
 
   // Initialize Socket.io connection
   useEffect(() => {
@@ -68,7 +89,9 @@ export function ChatRoomPage() {
 
           // If we are here, the Link is VALID. Join the room.
           setRoomCapacity(dbCapacity);
-          socket.emit('join_room', { room: roomId, username, capacity: dbCapacity });
+          currentCapacityRef.current = dbCapacity;
+          hasJoinedRef.current = true;
+          socket.emit('join_room', { room: roomId, username, userId, capacity: dbCapacity });
 
         } else if (response.status === 404) {
           // --- CASE 2: ROOM DOES NOT EXIST ---
@@ -77,9 +100,12 @@ export function ChatRoomPage() {
           if (urlCapacity && urlCapacity >= 2 && urlCapacity <= 100) {
             console.log("Creating new room...");
             setRoomCapacity(urlCapacity);
+            currentCapacityRef.current = urlCapacity;
+            hasJoinedRef.current = true;
             socket.emit('create_room', { 
               room: roomId, 
               username,
+              userId,
               capacity: urlCapacity
             });
           } else {
@@ -100,6 +126,22 @@ export function ChatRoomPage() {
     };
 
     initializeRoom();
+
+    // --- HANDLE RECONNECTION (Mobile screen off/on) ---
+    socket.on('connect', () => {
+      console.log('Socket connected/reconnected');
+      // If we had previously joined a room, re-join to sync messages
+      if (hasJoinedRef.current && roomId && currentCapacityRef.current > 0) {
+        console.log('Reconnecting to room:', roomId);
+        socket.emit('join_room', { 
+          room: roomId, 
+          username, 
+          userId,
+          capacity: currentCapacityRef.current,
+          isReconnect: true // Flag to let server know this is a reconnection
+        });
+      }
+    });
 
     // --- SOCKET EVENT LISTENERS ---
 
@@ -135,7 +177,8 @@ export function ChatRoomPage() {
         text: msg.message,
         username: msg.author,
         timestamp: msg.time,
-        isSelf: msg.author === username,
+        author: msg.userId || msg.author, // Use persistent userId for comparison
+        isSelf: (msg.userId || msg.author) === userId,
       }));
       setMessages(formattedMessages);
     });
@@ -146,7 +189,8 @@ export function ChatRoomPage() {
         text: data.message,
         username: data.author,
         timestamp: data.time,
-        isSelf: data.author === username,
+        author: data.userId || data.author, // Use persistent userId for comparison
+        isSelf: (data.userId || data.author) === userId,
       };
       setMessages((prev) => [...prev, newMessage]);
     });
@@ -157,6 +201,7 @@ export function ChatRoomPage() {
         text: data.message,
         username: data.username,
         timestamp: data.time,
+        author: 'system',
         isSelf: false,
       };
       setMessages((prev) => [...prev, systemMessage]);
@@ -168,6 +213,7 @@ export function ChatRoomPage() {
         text: data.message,
         username: data.username,
         timestamp: data.time,
+        author: 'system',
         isSelf: false,
       };
       setMessages((prev) => [...prev, systemMessage]);
@@ -187,12 +233,13 @@ export function ChatRoomPage() {
     });
 
     return () => {
+      hasJoinedRef.current = false;
       if (roomId) {
         socket.emit('leave_room', { room: roomId, username });
       }
       socket.disconnect();
     };
-  }, [roomId, username, searchParams, navigate]); // Dependencies updated
+  }, [roomId, username, userId, searchParams, navigate]); // Dependencies updated
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -214,6 +261,7 @@ export function ChatRoomPage() {
     socketRef.current.emit('send_message', {
       room: roomId,
       author: username,
+      userId: userId, // Use persistent userId for message ownership
       message: text,
       time: time,
     });

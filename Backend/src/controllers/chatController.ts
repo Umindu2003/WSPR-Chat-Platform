@@ -3,6 +3,7 @@ import { Message, IMessage } from '../models/Message';
 interface MessageData {
   room: string;
   author: string;
+  userId: string; // Persistent user identifier
   message: string;
   time: string;
 }
@@ -15,6 +16,7 @@ export const saveMessage = async (messageData: MessageData): Promise<IMessage> =
     const newMessage = new Message({
       room: messageData.room,
       author: messageData.author,
+      userId: messageData.userId,
       message: messageData.message,
       time: messageData.time,
     });

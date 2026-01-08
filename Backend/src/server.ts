@@ -132,8 +132,8 @@ io.on('connection', (socket: Socket) => {
   });
 
   // Event: User joins an existing room (strict validation - room must exist)
-  socket.on('join_room', async (data: { room: string; username: string; capacity?: number }) => {
-    const { room, username, capacity } = data;
+  socket.on('join_room', async (data: { room: string; username: string; userId?: string; capacity?: number; isReconnect?: boolean }) => {
+    const { room, username, userId, capacity, isReconnect } = data;
 
     try {
       // STRICT VALIDATION: Check if room exists in database
@@ -192,15 +192,19 @@ io.on('connection', (socket: Socket) => {
         capacity: joinResult.room?.capacity,
       });
 
-      // Notify others in the room
-      socket.to(room).emit('user_joined', {
-        message: `${username || 'Someone'} joined the room`,
-        username: 'System',
-        time: new Date().toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-      });
+      // Notify others in the room (skip notification if this is a reconnection)
+      if (!isReconnect) {
+        socket.to(room).emit('user_joined', {
+          message: `${username || 'Someone'} joined the room`,
+          username: 'System',
+          time: new Date().toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        });
+      } else {
+        console.log(`🔄 ${username || socket.id} reconnected to room: ${room}`);
+      }
     } catch (error) {
       console.error('❌ Error joining room:', error);
       socket.emit('error', { message: 'Failed to join room' });
@@ -210,14 +214,15 @@ io.on('connection', (socket: Socket) => {
   // Event: User sends a message
   socket.on(
     'send_message',
-    async (data: { room: string; author: string; message: string; time: string }) => {
-      const { room, author, message, time } = data;
+    async (data: { room: string; author: string; userId: string; message: string; time: string }) => {
+      const { room, author, userId, message, time } = data;
 
       try {
         // Save message to database
         const savedMessage = await saveMessage({
           room,
           author,
+          userId,
           message,
           time,
         });
@@ -227,6 +232,7 @@ io.on('connection', (socket: Socket) => {
           id: savedMessage._id,
           room,
           author,
+          userId, // Include userId for ownership comparison on clients
           message,
           time,
           createdAt: savedMessage.createdAt,
