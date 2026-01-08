@@ -5,7 +5,7 @@ export interface IMessage extends Document {
   author: string; // Persistent userId for ownership
   displayName: string; // Display name for UI
   userId: string; // Persistent user identifier (same as author, for backward compatibility)
-  message: string;
+  message: string; // new ones
   time: string;
   createdAt: Date;
 }
