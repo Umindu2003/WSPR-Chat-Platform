@@ -214,15 +214,18 @@ io.on('connection', (socket: Socket) => {
   // Event: User sends a message
   socket.on(
     'send_message',
-    async (data: { room: string; author: string; myUserId: string; message: string; time: string }) => {
-      const { room, author, myUserId, message, time } = data;
+    async (data: { room: string; author: string; displayName?: string; message: string; time: string }) => {
+      const { room, author, displayName, message, time } = data;
 
       try {
         // Save message to database
+        // author = myUserId (persistent ID for ownership)
+        // displayName = username (for display in UI)
         const savedMessage = await saveMessage({
           room,
-          author,
-          userId: myUserId, // Store as userId in database
+          author, // This is now the persistent myUserId
+          displayName: displayName || author, // Store display name
+          userId: author, // Store same value for backward compatibility
           message,
           time,
         });
@@ -231,14 +234,14 @@ io.on('connection', (socket: Socket) => {
         io.to(room).emit('receive_message', {
           id: savedMessage._id,
           room,
-          author,
-          userId: myUserId, // Include userId for ownership comparison on clients
+          author, // Persistent myUserId for ownership comparison
+          displayName: displayName || author, // Display name for UI
           message,
           time,
           createdAt: savedMessage.createdAt,
         });
 
-        console.log(`📨 Message in room ${room} from ${author}: ${message}`);
+        console.log(`📨 Message in room ${room} from ${displayName || author}: ${message}`);
       } catch (error) {
         console.error('❌ Error handling message:', error);
         socket.emit('error', { message: 'Failed to send message' });

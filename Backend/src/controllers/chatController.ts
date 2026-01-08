@@ -2,8 +2,9 @@ import { Message, IMessage } from '../models/Message';
 
 interface MessageData {
   room: string;
-  author: string;
-  userId: string; // Persistent user identifier
+  author: string; // Persistent userId for ownership
+  displayName?: string; // Display name for UI
+  userId: string; // Persistent user identifier (same as author)
   message: string;
   time: string;
 }
@@ -16,6 +17,7 @@ export const saveMessage = async (messageData: MessageData): Promise<IMessage> =
     const newMessage = new Message({
       room: messageData.room,
       author: messageData.author,
+      displayName: messageData.displayName || messageData.author,
       userId: messageData.userId,
       message: messageData.message,
       time: messageData.time,

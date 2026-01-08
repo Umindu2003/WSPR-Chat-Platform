@@ -2,8 +2,9 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IMessage extends Document {
   room: string;
-  author: string;
-  userId: string; // Persistent user identifier
+  author: string; // Persistent userId for ownership
+  displayName: string; // Display name for UI
+  userId: string; // Persistent user identifier (same as author, for backward compatibility)
   message: string;
   time: string;
   createdAt: Date;
@@ -19,6 +20,11 @@ const MessageSchema: Schema = new Schema(
     author: {
       type: String,
       required: true,
+    },
+    displayName: {
+      type: String,
+      required: false,
+      default: '',
     },
     userId: {
       type: String,

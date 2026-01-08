@@ -172,25 +172,31 @@ export function ChatRoomPage() {
     });
 
     socket.on('load_messages', (loadedMessages: any[]) => {
-      const formattedMessages = loadedMessages.map((msg: any) => ({
-        id: msg._id || msg.id,
-        text: msg.message,
-        username: msg.author,
-        timestamp: msg.time,
-        author: msg.userId || msg.author, // Use persistent myUserId for comparison
-        isSelf: (msg.userId || msg.author) === myUserId,
-      }));
+      const formattedMessages = loadedMessages.map((msg: any) => {
+        // Check if author matches myUserId (author now stores the persistent ID)
+        const isMyMessage = msg.author === myUserId;
+        return {
+          id: msg._id || msg.id,
+          text: msg.message,
+          username: msg.displayName || msg.author, // Use displayName for UI, fallback to author
+          timestamp: msg.time,
+          author: msg.author, // Persistent userId for comparison
+          isSelf: isMyMessage,
+        };
+      });
       setMessages(formattedMessages);
     });
 
     socket.on('receive_message', (data: any) => {
+      // Check if author matches myUserId (author now stores the persistent ID)
+      const isMyMessage = data.author === myUserId;
       const newMessage: Message = {
         id: data.id || Date.now().toString(),
         text: data.message,
-        username: data.author,
+        username: data.displayName || data.author, // Use displayName for UI, fallback to author
         timestamp: data.time,
-        author: data.userId || data.author, // Use persistent myUserId for comparison
-        isSelf: (data.userId || data.author) === myUserId,
+        author: data.author, // Persistent userId for comparison
+        isSelf: isMyMessage,
       };
       setMessages((prev) => [...prev, newMessage]);
     });
@@ -260,8 +266,8 @@ export function ChatRoomPage() {
     socketRef.current.emit('stop_typing', { room: roomId, username });
     socketRef.current.emit('send_message', {
       room: roomId,
-      author: username,
-      myUserId, // Use persistent myUserId for message ownership
+      author: myUserId, // Use persistent myUserId as author for ownership
+      displayName: username, // Display name for UI
       message: text,
       time: time,
     });
